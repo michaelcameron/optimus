@@ -64,18 +64,18 @@
 
     ;; 2. are there files referenced by this file that aren't fixed yet?
     (let [next (by-path (first to-replace) files)
-          remaining-references (set/intersection to-replace (set (:references next)))]
+          remaining-references (disj (set/intersection (set to-replace) (set (:references next))) (first to-replace))]
 
       ;;    -> then take those first
       (if (seq remaining-references)
-        (recur (concat remaining-references (set/difference to-replace remaining-references))
+        (recur (concat remaining-references (set/difference (set to-replace) remaining-references))
                files)
 
         ;; 3. otherwise update all references in this file, and fix it too.
         (->> files
              (replace {next (-> next
-                                (replace-referenced-urls-with-new-ones files)
-                                (add-cache-busted-expires-header))})
+                                (add-cache-busted-expires-header)
+                                (replace-referenced-urls-with-new-ones files))})
 
              ;; and continue with the rest that remain.
              (recur (set (rest to-replace))))))))
